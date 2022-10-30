@@ -77,31 +77,9 @@ class Lazy {
         this.draw();
     }
 
-    moveY(speed) {
+    moveY(pos) {
         if (this.alive) {
-            if (speed != 0) {
-                if (this.y > windowHeight - this.width) {
-                    this.direction = 1;
-                }
-                else if (this.y < 0 ) {
-                    this.direction = -1;
-                }
-                this.y -= (speed * this.direction);
-            }
-            else {
-                if (this.jumpDetected != 0 && this.jumpRep < this.nbOfJumpRep) {
-                    this.jumpRep++;
-                    this.jumpY();
-                    }
-                    else if (this.jumpRep >= this.nbOfJumpRep){
-                    this.jumpDetected = 0;
-                    this.jumpRep = 0;
-                    this.fallY();
-                    }
-                    else {
-                    this.fallY();
-                    } 
-                }
+            this.y = pos;
             this.draw();
             }
     }

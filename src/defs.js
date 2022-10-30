@@ -177,6 +177,8 @@ let lazySelected = -1;
  let lazer = 0;
  let causOfDeath = 0;
 
+ let soundOn = false;
+
  let invicibilityTimer = 0;
  let invicibilityTimerStart = 0;
 
@@ -196,6 +198,10 @@ let lazySelected = -1;
  let logo;
  
  let BOOM = [];
+
+ let ble = 0;
+ let sEmgValue = 0;
+ let sEmgValueFiltered = 0;
  
 
 

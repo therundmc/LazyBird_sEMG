@@ -144,6 +144,10 @@ function setup() {
   lazyKazeList[KAZE_LIST.LAZYKAZE] = new Lazy(windowWidth,  0,  0.8, animList[ANIM_LIST.LAZYKAZE]);
   lazyKazeList[KAZE_LIST.LAZYKAZE2] = new Lazy(windowWidth* 1.5,  windowHeight * 0.5,  0.7, animList[ANIM_LIST.LAZYKAZE]);
   lazyKazeList[KAZE_LIST.LAZYKAZE3] = new Lazy(windowWidth* 2,  windowHeight * 0.8,  0.8, animList[ANIM_LIST.LAZYKAZE]);
+
+  // Ble
+  sEmgSensor = new Ble();
+   
   // MISC
   score = 0;
   gameState = STATES.MENU;
@@ -161,6 +165,7 @@ function draw() {
       drawMenuScreen();
       drawBgLazy(0);
       drawInitLazy(0);
+      drawEmgValue();
       break;
 
     case STATES.INIT:
@@ -178,9 +183,8 @@ function draw() {
       switch (gameStage) {
         case 1:
           drawBg(GAME_SPEED_RESCALED);
-          //drawBgLazy(0);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          drawLazy()
+          drawLazy(sEmgValue)
+          drawEmgValue();
           if (score > 5) {
             gameStage++; 
           }
@@ -324,10 +328,10 @@ function drawBgLazy(speed) {
   }
 }
 
-function drawLazy() {
+function drawLazy(pos) {
   for(i=0; i < LAZY_LIST.COUNT; i++) {
     if (lazyList[i].selected) {
-      lazyList[i].moveY(0);
+      lazyList[i].moveY(pos);
     }
   }
 }
@@ -404,8 +408,15 @@ function drawMenuScreen() {
 
   textSize((windowWidth + windowHeight) / TEXT_SMALL_RATIO);
   fill(0,150,100)
-  text('- Fnek Game Studios -', windowWidth * 0.5, windowHeight * 0.90);
-  image(logo, windowWidth * 0.47, windowHeight * 0.75, windowWidth * 0.05 , windowHeight * 0.1);
+  text(sEmgValue, windowWidth * 0.5, windowHeight * 0.90);
+
+}
+
+function drawEmgValue() {  
+  textSize((windowWidth + windowHeight) / TEXT_SMALL_RATIO);
+  fill(0,150,100)
+  text(sEmgValue, windowWidth * 0.5, windowHeight * 0.90);
+  text(sEmgValueFiltered, windowWidth * 0.2, windowHeight * 0.90);
 
 }
 
@@ -635,9 +646,25 @@ function keyPressed() {
   if (keyCode === UP_ARROW) {
     handleUserAction();
   }
+  if (keyCode === DOWN_ARROW) {
+    sEmgSensor.connect()
+    .then(() => sEmgSensor.startNotifications().then(handleEmgMeasurement))
+    .catch(error => {
+      console.log(error);
+    });
+  }
 }
 
 function touchStarted() {
   handleUserAction();
   return false;
+}
+
+function handleEmgMeasurement(sEmgMesurement) {
+  sEmgMesurement.addEventListener('characteristicvaluechanged', event => {
+    var sEmgMesurement = sEmgSensor.parseValue(event.target.value);
+    sEmgValue = sEmgMesurement.value;
+    sEmgValueFiltered = sEmgValue - (0.5 *(sEmgValue - sEmgValuePrev))
+    var sEmgValuePrev = sEmgValueFiltered;
+  });
 }
