@@ -119,8 +119,8 @@ function setup() {
   // Pipes
   let offsetBetweenPipes = (windowWidth / (NB_PIPES / 2));
   for (i=0; i < NB_PIPES; i+=2) {
-    pipesList[i] = new Pipe(windowWidth + i * offsetBetweenPipes, windowHeight - windowHeight / 2, "down", i, 0.2 + 0.05*i, imgList[IMAGE_LIST.PIPE_DOWN]);
-    pipesList[i + 1]= new Pipe(windowWidth + i * offsetBetweenPipes, 0, "up", i, 0.4 - (0.05*i), imgList[IMAGE_LIST.PIPE_UP]);
+    pipesList[i] = new Pipe(windowWidth + i * offsetBetweenPipes, windowHeight - windowHeight / 2, "down", i, 0.5 + 0.05*i, imgList[IMAGE_LIST.PIPE_DOWN]);
+    pipesList[i + 1]= new Pipe(windowWidth + i * offsetBetweenPipes, 0, "up", i, 0.1 - (0.05*i), imgList[IMAGE_LIST.PIPE_UP]);
   }
 
   // Lazy
@@ -152,7 +152,7 @@ function setup() {
   score = 0;
   gameState = STATES.MENU;
   gameStage = 1;
-  defPosXLazy = windowWidth / 6;
+  defPosXLazy = -windowWidth / 10;
 }
 
 function draw() {
@@ -161,7 +161,7 @@ function draw() {
 
   switch (gameState) {
     case STATES.MENU:
-      drawBg(0.5);
+      drawBg(GAME_SPEED_RESCALED / 10);
       drawMenuScreen();
       drawBgLazy(0);
       drawInitLazy(0);
@@ -170,108 +170,154 @@ function draw() {
 
     case STATES.INIT:
       initSpeed -= windowWidth / (20 * windowWidth);
-      drawBg(-initSpeed);
+      drawBg(GAME_SPEED_RESCALED / 10);
       if(drawInitLazy(initSpeed)){
         initSpeed = 0;
         initLazySpeed();
-        gameState = STATES.PLAY;
+        gameState = STATES.CALIBRATION;
       };
+      drawEmgValue();
+      break;
+
+    case STATES.CALIBRATION:
+      drawBg(GAME_SPEED_RESCALED / 10);
+      drawEmgValue();
+      switch(calibrationStage) {
+        case 1:
+          calibrationDone = false;
+          startTimer();
+          calibrationStage++;
+          break;
+
+        // Init
+        case 2:
+
+          textSize((windowWidth + windowHeight) / TEXT_BIG_RATIO);
+          fill(0,0,0)
+          text('Calibration', windowWidth * 0.5, windowHeight * 0.4);
+          textSize((windowWidth + windowHeight) / TEXT_SMALL_RATIO);
+          text('Get ready !', windowWidth * 0.5 , windowHeight * 0.5);
+
+          if (getTimeout(2000)) {
+            startTimer();
+            calibrationStage ++;
+          }
+        break;
+
+        // Calibration Relax 
+        case 3:
+
+          sEmgValueMin = computeAverage(sEmgValueFiltered, sEmgValueMin);
+          drawPhase("RELAX ", 'blue', getTimer(), 4000);
+
+          if (getTimeout(4000)) {
+            startTimer();
+            calibrationStage ++;
+          }
+          break;
+
+        // Calibration Contract 
+        case 4:
+          
+          sEmgValueMax = computeAverage(sEmgValueFiltered, sEmgValueMax);
+
+          drawPhase("CONTRACT ", 'red', getTimer(), 4000);
+
+          if (getTimeout(4000)) {
+            startTimer();
+            calibrationStage ++;
+          }
+          break;
+
+        // Calibration Done + Get Ready
+        case 5:
+          calibrationDone = true;
+
+          textSize((windowWidth + windowHeight) / TEXT_BIG_RATIO);
+          fill(0,0,0)
+          text('GET READY', windowWidth/2, windowHeight * 0.4);
+
+
+          if (getTimeout(1000)) {
+             calibrationStage ++;
+          }
+          break;
+
+          case 6:
+            
+            drawEmgValue();
+            gameState = STATES.PLAY;
+            break;
+      }
       break;
 
     case STATES.PLAY:
       lazyList[lazySelected].alive = true;
       switch (gameStage) {
+        //INIT
         case 1:
           drawBg(GAME_SPEED_RESCALED);
-          drawLazy(sEmgValue)
-          drawEmgValue();
-          if (score > 5) {
-            gameStage++; 
-          }
+          startTimer();
+          gameStage++;
           break;
 
-        // transition 
+        // GO
         case 2:
           drawBg(GAME_SPEED_RESCALED);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          playSound(soundList[SOUND_LIST.ROBOTY] , 0.7); 
-          robotyList[ROBOTY_LIST.ROBOTY].moveX(GAME_SPEED_RESCALED / 4);
+
+          textSize((windowWidth + windowHeight) / TEXT_BIG_RATIO);
+          fill(0,0,0)
+          text('GO !', windowWidth/2, windowHeight * 0.4);
+
+          lazyList[lazySelected].moveX(-GAME_SPEED_RESCALED / 3.5)
           drawLazy();
-          if (score > 6) {
-            gameStage++; 
+
+          if (getTimeout(3000)) {
+            startTimer();
+            gameStage ++;
+            level = 1;
           }
           break;
 
+        // LEVEL 1
         case 3:
           drawBg(GAME_SPEED_RESCALED);
-          //drawBgLazy(0);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_EASY);
-          drawRoboty(GAME_SPEED_RESCALED);
-          shootShortRoboty(GAME_SPEED_RESCALED);
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
           drawLazy();
-          if (score > 15) {
-            gameStage++; 
+          if (score > 5){
+            level = 2;
+            startTimer();
+            gameStage++;
           }
           break;
 
-        // Transistion 
+        // TRANSITION
         case 4:
           drawBg(GAME_SPEED_RESCALED);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_EASY);
-          robotyList[ROBOTY_LIST.ROBOTY].moveX(-GAME_SPEED_RESCALED / 4);
-          playSound(soundList[SOUND_LIST.LAZYKAZE] , 0.8); 
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
+          robotyList[0].moveX(+GAME_SPEED_RESCALED);
+          drawRoboty(-GAME_SPEED_RESCALED);
+          shootShortRoboty(GAME_SPEED_RESCALED);
           drawLazy();
-          if (score > 16) {
-            gameStage++; 
+
+          if (getTimeout(1000)) {
+            startTimer();
+            gameStage ++;
           }
           break;
 
+        // LEVEL 2
         case 5:
           drawBg(GAME_SPEED_RESCALED);
-          //drawBgLazy(0);
           drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          drawRoboty(GAME_SPEED_RESCALED);
-          drawLazyKaze(GAME_SPEED_RESCALED, 2);
+          drawRoboty(-GAME_SPEED_RESCALED);
+          shootShortRoboty(GAME_SPEED_RESCALED*0.5);
           drawLazy();
-          if (score > 25) {
-            gameStage++; 
-          }
-          break;
-
-        // Transistion 
-        case 6:
-          drawBg(GAME_SPEED_RESCALED);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          playSound(soundList[SOUND_LIST.ROBOTY] , 0.7); 
-          robotyList[ROBOTY_LIST.ROBOTY].moveX(GAME_SPEED_RESCALED / 4);
-          drawLazyKaze(GAME_SPEED_RESCALED, 2);
-          drawLazy();
-          if (score > 26) {
-            gameStage++; 
-          }
-          break;
-
-        case 7:
-          drawBg(GAME_SPEED_RESCALED);
-          //drawBgLazy(0);
-          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          drawRoboty(GAME_SPEED_RESCALED);
-          shootShortRoboty(1.5 * GAME_SPEED_RESCALED);
-          drawLazyKaze(GAME_SPEED_RESCALED, 3);
-          drawLazy();
-          if (score > 40) {
-            gameStage++; 
-          }
-          break;
-
-        case 8:
-          drawBg(0);
-          drawBgLazy(-GAME_SPEED_RESCALED / 4);
-          drawEndGameScreen();
           break;
 
           
       }
+      drawEmgValue();
       drawScore();
       handleCollision();
       break;
@@ -312,7 +358,7 @@ function drawPipes(speed, size) {
       pipesList[i + 1].moveX(speed);
     }
     else {
-      sizeDown = random(0.1,size);
+      sizeDown = random(0.3,size);
       sizeUp = random(size, size + 0.1) - sizeDown
       pipesList[i].init(windowWidth, sizeDown);
       pipesList[i+1].init(windowWidth, sizeUp);
@@ -328,17 +374,17 @@ function drawBgLazy(speed) {
   }
 }
 
-function drawLazy(pos) {
+function drawLazy() {
   for(i=0; i < LAZY_LIST.COUNT; i++) {
     if (lazyList[i].selected) {
-      lazyList[i].moveY(pos);
+      lazyList[i].absMoveY((windowHeight - sEmgValueFilteredScaled));
     }
   }
 }
 
 function drawRoboty(speed) {
   for(i=0; i < ROBOTY_LIST.COUNT; i++) {
-    robotyList[i].moveY(speed);
+    robotyList[i].bounceMoveY(speed);
   }
 }
 
@@ -388,6 +434,16 @@ function initLazySpeed() {
   }
 }
 
+function drawPhase(textToDisplay, color, time, duration) {
+  let pBarSize = windowWidth * 0.4;
+  textSize((windowWidth + windowHeight) / TEXT_BIG_RATIO);
+  fill(color);
+  text(textToDisplay, windowWidth/2, windowHeight * 0.4);
+
+  noStroke();
+  rect(windowWidth * 0.3,windowHeight*0.5, (pBarSize * time / duration), windowHeight*0.03);
+}
+
 function drawMenuScreen() {  
   let alpha = 100;
   startImage.x = windowWidth/2-windowWidth/TITLE_W_RATIO /2;
@@ -406,18 +462,23 @@ function drawMenuScreen() {
   // text('LAZY BIRD', windowWidth/2, windowHeight * 0.5);
   noTint();
 
-  textSize((windowWidth + windowHeight) / TEXT_SMALL_RATIO);
-  fill(0,150,100)
-  text(sEmgValue, windowWidth * 0.5, windowHeight * 0.90);
-
 }
 
 function drawEmgValue() {  
-  textSize((windowWidth + windowHeight) / TEXT_SMALL_RATIO);
-  fill(0,150,100)
-  text(sEmgValue, windowWidth * 0.5, windowHeight * 0.90);
-  text(sEmgValueFiltered, windowWidth * 0.2, windowHeight * 0.90);
+  let size = (windowWidth + windowHeight) / TEXT_SMALL_RATIO;
 
+  textAlign(LEFT, CENTER);
+  textSize(size);
+  fill(255,255,255);
+
+  if (connected) {
+    text(sEmgValueFiltered + " µV", size, windowHeight * 0.9);
+
+  }
+  else {
+    text("Connect device", size, windowHeight * 0.9);
+  }
+  textAlign(CENTER, CENTER);
 }
 
 function drawFps() {
@@ -521,14 +582,13 @@ function handleSound() {
     case STATES.MENU:
       stopSound(soundList[SOUND_LIST.SONG]);
       playSound(soundList[SOUND_LIST.MENU] , 0.7); 
-      playSound(soundList[SOUND_LIST.OCEAN], 0.2);
       break;
 
 
     case STATES.PLAY:
       stopSound(soundList[SOUND_LIST.MENU]);
       playSound(soundList[SOUND_LIST.SONG], 0.7);
-      playSound(soundList[SOUND_LIST.OCEAN], 0.1);
+      playSound(soundList[SOUND_LIST.FLAP], 0.8);
       break;
 
     case STATES.PAUSE:
@@ -538,7 +598,6 @@ function handleSound() {
     case STATES.GAME_OVER:
       stopSound(soundList[SOUND_LIST.SONG]);
       playSound(soundList[SOUND_LIST.MENU], 0.7);
-      playSound(soundList[SOUND_LIST.OCEAN], 0.2);
       break;
       
     default:
@@ -559,10 +618,11 @@ function drawScore() {
   fill(0,0,0)
   text(score, scoreTextSize, scoreTextSize);
 
+  textAlign(RIGHT, CENTER);
   levelTextSize = (windowWidth + windowHeight) / TEXT_SMALL_RATIO;
   textSize(levelTextSize);
   fill(255,255,255)
-  text("LEVEL:" + gameStage, windowWidth - 4 *levelTextSize, windowHeight - levelTextSize);
+  text("LEVEL:" + level, windowWidth - levelTextSize, windowHeight - levelTextSize);
 
   let livesText = "";
   livesTextSize = (windowWidth + windowHeight) / TEXT_BIG_RATIO;
@@ -571,8 +631,8 @@ function drawScore() {
   for (i=0; i<lazyList[lazySelected].lives; i++){
     livesText += '\u2665';
   }
-  textAlign(LEFT, CENTER);
-  text(livesText, windowWidth - 4 *livesTextSize, livesTextSize);
+  textAlign(RIGHT, CENTER);
+  text(livesText, windowWidth - livesTextSize, livesTextSize);
   textAlign(CENTER, CENTER);
 }
 
@@ -616,6 +676,9 @@ function handleUserAction() {
         forcePlaySound(soundList[SOUND_LIST.INTRO], 0.8);
         gameState = STATES.INIT;
       }
+      if (!connected) {
+        handleConnectionRequest();
+      }
       break;
 
     case STATES.INIT:
@@ -646,13 +709,6 @@ function keyPressed() {
   if (keyCode === UP_ARROW) {
     handleUserAction();
   }
-  if (keyCode === DOWN_ARROW) {
-    sEmgSensor.connect()
-    .then(() => sEmgSensor.startNotifications().then(handleEmgMeasurement))
-    .catch(error => {
-      console.log(error);
-    });
-  }
 }
 
 function touchStarted() {
@@ -660,11 +716,30 @@ function touchStarted() {
   return false;
 }
 
+function handleConnectionRequest() {
+  connected = true;
+  sEmgSensor.connect()
+  .then(() => sEmgSensor.startNotifications().then(handleEmgMeasurement))
+  .catch(error => {
+    console.log(error);
+  });
+}
+
 function handleEmgMeasurement(sEmgMesurement) {
   sEmgMesurement.addEventListener('characteristicvaluechanged', event => {
+    var sEmgValuePrev = sEmgValueFiltered;
     var sEmgMesurement = sEmgSensor.parseValue(event.target.value);
     sEmgValue = sEmgMesurement.value;
-    sEmgValueFiltered = sEmgValue - (0.5 *(sEmgValue - sEmgValuePrev))
-    var sEmgValuePrev = sEmgValueFiltered;
+    sEmgValueFiltered = Math.round(sEmgValuePrev + (0.15 *(sEmgValue - sEmgValuePrev)));
+
+    if (calibrationDone) {
+      sEmgValueScaled = Math.round(((sEmgValue * windowHeight) / sEmgValueMax - sEmgValueMin));
+      sEmgValueFilteredScaled = Math.round(((sEmgValueFiltered * windowHeight) / sEmgValueMax - sEmgValueMin));
+    }
+    else {
+      sEmgValueScaled = Math.round(((sEmgValue * windowHeight) / 1024));
+      sEmgValueFilteredScaled = Math.round(((sEmgValueFiltered * windowHeight) / 1024));
+    }
+
   });
 }

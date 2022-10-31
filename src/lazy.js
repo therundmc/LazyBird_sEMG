@@ -44,6 +44,7 @@ class Lazy {
 
         this.invincibilityTimer = 0;
         this.invincibilityTimerStart = 0;
+        this.tilt = 0;
 
         this.heightRatio = windowHeight / height;
     }
@@ -77,9 +78,35 @@ class Lazy {
         this.draw();
     }
 
-    moveY(pos) {
+    absMoveY(y) {
         if (this.alive) {
-            this.y = pos;
+            let prev = this.y;
+            this.y = y - this.height;
+            if (abs(prev - this.y) > 3) {
+                this.tilt =  (prev + 0.3*(prev - this.y));
+                this.tilt = -30 +((this.tilt * 60) / windowHeight);
+            }
+
+            if (this.y < this.height) {
+                this.y = this.height
+            }
+            else if (this.y > windowHeight + this.height) {
+                this.y = windowHeight + this.height
+            }
+            this.draw();
+            }
+    }
+
+    absMoveX(x) {
+        if (this.alive) {
+            this.x = x - this.width;
+
+            if (this.x < this.width) {
+                this.x = this.width
+            }
+            else if (this.x > windowWidth + this.width) {
+                this.x = windowWidth + this.x
+            }
             this.draw();
             }
     }
@@ -94,6 +121,32 @@ class Lazy {
         this.antiGravity = anitgravityDefault;
         this.gravity +=  this.deccel;
         this.y += this.gravity;
+    }
+
+    moveY(speed) {
+        if (this.alive) {
+            this.y -= speed;
+            if (this.y < this.height) {
+                this.y = this.height
+            }
+            else if (this.y > windowHeight + this.height) {
+                this.y = windowHeight + this.height
+            }
+            this.draw();
+            }
+    }
+
+    bounceMoveY(speed) {
+        if (this.alive) {
+            this.y -= this.direction * speed;
+            if (this.y < 0) {
+                this.direction = +1;
+            }
+            else if (this.y > windowHeight - this.height) {
+                this.direction = -1;
+            }
+            this.draw();
+            }
     }
 
     moveX(customSpeed) {
@@ -219,7 +272,7 @@ class Lazy {
     }
 
     draw() {
-         image(this.img[this.animFrame], this.x, this.y, this.width, this.height);
+         rotate_and_draw_image(this.img[this.animFrame], this.x, this.y, this.width, this.height, this.tilt);
          this.now = new Date().getTime()
          this.delta = this.now - this.last;
 

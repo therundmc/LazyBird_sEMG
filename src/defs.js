@@ -13,7 +13,7 @@
  const JUMP_FORCE = 1100; // less is more
  const GRAVITY_FORCE = 1500;
  
- const NB_PIPES = 8;
+ const NB_PIPES = 4;
  const FIX_SIZE = false;
  
  // RATIO
@@ -26,7 +26,7 @@
  const MAP_W_GRASS_RATIO = 1;
  const MAP_H_GRASS_RATIO = 1;
 
- const PIPE_W_RATIO = 10;
+ const PIPE_W_RATIO = 6;
  const PIPE_H_RATIO = 1;
 
  const LAZY_RATIO = 8;
@@ -128,11 +128,12 @@ const DEATH = {
 // GAME STATES
 const STATES = {
     INIT: 0,
-    MENU: 1,
-    PAUSE: 2,
-    INIT: 3,
-    PLAY: 4,
-    GAME_OVER: 5,
+    CALIBRATION: 1,
+    MENU: 2,
+    PAUSE: 3,
+    INIT: 4,
+    PLAY: 5,
+    GAME_OVER: 6,
     // ---
 }
 
@@ -177,13 +178,15 @@ let lazySelected = -1;
  let lazer = 0;
  let causOfDeath = 0;
 
- let soundOn = false;
+ let soundOn = true;
+ let level = 1;
 
  let invicibilityTimer = 0;
  let invicibilityTimerStart = 0;
 
  let gameState = STATES.INIT;
  let gameStage = 1;
+ let calibrationStage = 1;
 
  let score = 0;
  let initSpeed = 0;
@@ -196,12 +199,23 @@ let lazySelected = -1;
  let frameCounter = 0;
  
  let logo;
+ let timer = 0;
+ let timeout = 0;
  
  let BOOM = [];
 
  let ble = 0;
  let sEmgValue = 0;
+ let sEmgValueScaled = 0;
  let sEmgValueFiltered = 0;
+ let sEmgValueFilteredScaled = 0;
+
+ let sEmgValueMax = 1024;
+ let sEmgValueMin = 0;
+
+ let calibrationDone = false;
+ let connected = false;
+
  
 
 
