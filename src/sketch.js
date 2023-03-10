@@ -7,7 +7,7 @@ function preload() {
   // Sounds
   soundList[SOUND_LIST.SONG] = loadSound('assets/sound/LazyBird.mp3');
   soundList[SOUND_LIST.FLAP] = loadSound('assets/sound/wing_flap.mp3');
-  soundList[SOUND_LIST.OCEAN] = loadSound('assets/sound/ocean.mp3');
+  soundList[SOUND_LIST.OCEAN] = loadSound('assets/sound/forest.wav');
   soundList[SOUND_LIST.IMPACT] = loadSound('assets/sound/impact.wav');
   soundList[SOUND_LIST.CLICK] = loadSound('assets/sound/click.mp3');
   soundList[SOUND_LIST.INTRO] = loadSound('assets/sound/woosh.wav');
@@ -119,8 +119,8 @@ function setup() {
   // Pipes
   let offsetBetweenPipes = (windowWidth / (NB_PIPES / 2));
   for (i=0; i < NB_PIPES; i+=2) {
-    pipesList[i] = new Pipe(windowWidth + i * offsetBetweenPipes, windowHeight - windowHeight / 2, "down", i, 0.5 + 0.05*i, imgList[IMAGE_LIST.PIPE_DOWN]);
-    pipesList[i + 1]= new Pipe(windowWidth + i * offsetBetweenPipes, 0, "up", i, 0.1 - (0.05*i), imgList[IMAGE_LIST.PIPE_UP]);
+    pipesList[i] = new Pipe(windowWidth + i * offsetBetweenPipes, windowHeight - windowHeight / 2, "down", i, 0.2 + 0.05*i, imgList[IMAGE_LIST.PIPE_DOWN]);
+    pipesList[i + 1]= new Pipe(windowWidth + i * offsetBetweenPipes, 0, "up", i, 0.2 - (0.05*i), imgList[IMAGE_LIST.PIPE_UP]);
   }
 
   // Lazy
@@ -144,9 +144,6 @@ function setup() {
   lazyKazeList[KAZE_LIST.LAZYKAZE] = new Lazy(windowWidth,  0,  0.8, animList[ANIM_LIST.LAZYKAZE]);
   lazyKazeList[KAZE_LIST.LAZYKAZE2] = new Lazy(windowWidth* 1.5,  windowHeight * 0.5,  0.7, animList[ANIM_LIST.LAZYKAZE]);
   lazyKazeList[KAZE_LIST.LAZYKAZE3] = new Lazy(windowWidth* 2,  windowHeight * 0.8,  0.8, animList[ANIM_LIST.LAZYKAZE]);
-
-  // Ble
-  sEmgSensor = new Ble();
    
   // MISC
   score = 0;
@@ -284,7 +281,7 @@ function draw() {
           drawBg(GAME_SPEED_RESCALED);
           drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
           drawLazy();
-          if (score > 5){
+          if (score > 10){
             level = 2;
             startTimer();
             gameStage++;
@@ -295,9 +292,7 @@ function draw() {
         case 4:
           drawBg(GAME_SPEED_RESCALED);
           drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          robotyList[0].moveX(+GAME_SPEED_RESCALED);
-          drawRoboty(-GAME_SPEED_RESCALED);
-          shootShortRoboty(GAME_SPEED_RESCALED);
+          playSound(soundList[SOUND_LIST.LAZYKAZE], 0.6)
           drawLazy();
 
           if (getTimeout(1000)) {
@@ -310,12 +305,68 @@ function draw() {
         case 5:
           drawBg(GAME_SPEED_RESCALED);
           drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
-          drawRoboty(-GAME_SPEED_RESCALED);
-          shootShortRoboty(GAME_SPEED_RESCALED*0.5);
+          drawLazyKaze(GAME_SPEED_RESCALED, 1);
           drawLazy();
+          if (score > 20){
+            level = 3;
+            startTimer();
+            gameStage++;
+          }
           break;
 
-          
+        // TRANSITION
+        case 6:
+          drawBg(GAME_SPEED_RESCALED);
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
+          robotyList[0].moveX(+GAME_SPEED_RESCALED * 0.8);
+          playSound(soundList[SOUND_LIST.ROBOTY], 0.6)
+          drawRoboty(-GAME_SPEED_RESCALED);
+          drawLazyKaze(GAME_SPEED_RESCALED, 1);
+          drawLazy();
+          if (getTimeout(1000)) {
+            startTimer();
+            gameStage ++;
+          }
+          break;
+
+        // LEVEL 3
+        case 7:
+          drawBg(GAME_SPEED_RESCALED);
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
+          drawRoboty(-GAME_SPEED_RESCALED);
+          shootShortRoboty(GAME_SPEED_RESCALED*0.5);
+          drawLazyKaze(-GAME_SPEED_RESCALED);
+          drawLazy();
+
+          if (score > 30){
+            level = 4;
+            startTimer();
+            gameStage++;
+          }
+          break;
+
+        // TRANSITION
+        case 8:
+          drawBg(GAME_SPEED_RESCALED);
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
+          playSound(soundList[SOUND_LIST.LAZYKAZE], 0.6)
+          drawRoboty(-GAME_SPEED_RESCALED);
+          drawLazyKaze(GAME_SPEED_RESCALED, 1);
+          drawLazy();
+          if (getTimeout(1000)) {
+            startTimer();
+            gameStage ++;
+          }
+          break;
+
+        case 9:
+          drawBg(GAME_SPEED_RESCALED);
+          drawPipes(GAME_SPEED_RESCALED, SIZE_PIPE_MED);
+          drawRoboty(-GAME_SPEED_RESCALED);
+          shootShortRoboty(GAME_SPEED_RESCALED*0.5);
+          drawLazyKaze(GAME_SPEED_RESCALED, 1);
+          drawLazy();
+          break;
       }
       drawEmgValue();
       drawScore();
@@ -341,7 +392,9 @@ function draw() {
       break;
   }
 
-  handleSound();
+  if (audio) {
+    handleSound();
+  }
   //drawFps();
 }
 
@@ -358,8 +411,11 @@ function drawPipes(speed, size) {
       pipesList[i + 1].moveX(speed);
     }
     else {
-      sizeDown = random(0.3,size);
-      sizeUp = random(size, size + 0.1) - sizeDown
+      let index = Math.round(random(0,4))
+      sizeDown = pipeSizeList[index][0];
+      sizeUp = pipeSizeList[index][1];
+      // sizeDown = random(0.3,size);
+      // sizeUp = random(size, size + 0.1) - sizeDown
       pipesList[i].init(windowWidth, sizeDown);
       pipesList[i+1].init(windowWidth, sizeUp);
     }
@@ -392,7 +448,7 @@ function drawLazyKaze(speed, nb) {
   for(i=0; i < nb; i++) {
     if(!lazyKazeList[i].exploded && lazyKazeList[i].alive){
       lazyKazeList[i].moveX(speed * 1.5);
-      lazyKazeList[i].moveY(speed * 0.5);
+      lazyKazeList[i].bounceMoveY(-speed * 0.4);
     }
     else if (!lazyKazeList[i].exploded && !lazyKazeList[i].alive){
       lazyKazeList[i].die();
@@ -441,7 +497,7 @@ function drawPhase(textToDisplay, color, time, duration) {
   text(textToDisplay, windowWidth/2, windowHeight * 0.4);
 
   noStroke();
-  rect(windowWidth * 0.3,windowHeight*0.5, (pBarSize * time / duration), windowHeight*0.03);
+  rect(windowWidth * 0.25,windowHeight*0.5, (pBarSize * time / duration), windowHeight*0.03);
 }
 
 function drawMenuScreen() {  
@@ -554,6 +610,8 @@ function handleCollision(){
   for(i=0; i < KAZE_LIST.COUNT; i++) {
     if(lazyKazeList[i].alive){
       if (isCollision(lazyKazeList[i], lazyHitBox)){
+        lazyKazeList[i].causOfDeath = DEATH.LAZYKAZE
+        lazyKazeList[i].die();
         if(lazyList[lazySelected].hit(soundList[SOUND_LIST.BOOM]) <= 0){
           lazyList[lazySelected].causOfDeath = DEATH.LAZYKAZE;
           gameState = STATES.GAME_OVER;
@@ -580,14 +638,14 @@ for(i=0; i < KAZE_LIST.COUNT; i++) {
 function handleSound() {
   switch (gameState) {
     case STATES.MENU:
-      stopSound(soundList[SOUND_LIST.SONG]);
-      playSound(soundList[SOUND_LIST.MENU] , 0.7); 
+      playSound(soundList[SOUND_LIST.SONG] , 0.5);
+      playSound(soundList[SOUND_LIST.OCEAN], 0.3); 
       break;
 
 
     case STATES.PLAY:
-      stopSound(soundList[SOUND_LIST.MENU]);
-      playSound(soundList[SOUND_LIST.SONG], 0.7);
+      playSound(soundList[SOUND_LIST.SONG], 0.5);
+      playSound(soundList[SOUND_LIST.OCEAN], 0.3);
       playSound(soundList[SOUND_LIST.FLAP], 0.8);
       break;
 
@@ -596,8 +654,8 @@ function handleSound() {
       break;
 
     case STATES.GAME_OVER:
+      stopSound(soundList[SOUND_LIST.OCEAN]);
       stopSound(soundList[SOUND_LIST.SONG]);
-      playSound(soundList[SOUND_LIST.MENU], 0.7);
       break;
       
     default:
@@ -637,8 +695,14 @@ function drawScore() {
 }
 
 function windowResized() {
-  deInit();
-  setup();
+  if (!fullscreen()){
+    setup();
+
+  }
+  else {
+    // deInit();
+    // setup();
+  }
 }
 
 function handleUserAction() {
@@ -717,6 +781,7 @@ function touchStarted() {
 }
 
 function handleConnectionRequest() {
+  sEmgSensor = new Ble();
   connected = true;
   sEmgSensor.connect()
   .then(() => sEmgSensor.startNotifications().then(handleEmgMeasurement))
@@ -730,7 +795,7 @@ function handleEmgMeasurement(sEmgMesurement) {
     var sEmgValuePrev = sEmgValueFiltered;
     var sEmgMesurement = sEmgSensor.parseValue(event.target.value);
     sEmgValue = sEmgMesurement.value;
-    sEmgValueFiltered = Math.round(sEmgValuePrev + (0.15 *(sEmgValue - sEmgValuePrev)));
+    sEmgValueFiltered = Math.round(sEmgValuePrev + (0.20 *(sEmgValue - sEmgValuePrev)));
 
     if (calibrationDone) {
       sEmgValueScaled = Math.round(((sEmgValue * windowHeight) / sEmgValueMax - sEmgValueMin));

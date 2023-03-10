@@ -14,6 +14,7 @@ function isCollision(object1, object2)
 function playSound(sound, volume) {
     if (!sound.isPlaying() && soundOn) {
         sound.setVolume(volume);
+        sound.stop();
         sound.play();
     }
 }

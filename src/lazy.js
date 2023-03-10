@@ -82,10 +82,6 @@ class Lazy {
         if (this.alive) {
             let prev = this.y;
             this.y = y - this.height;
-            if (abs(prev - this.y) > 3) {
-                this.tilt =  (prev + 0.3*(prev - this.y));
-                this.tilt = -30 +((this.tilt * 60) / windowHeight);
-            }
 
             if (this.y < this.height) {
                 this.y = this.height
@@ -93,6 +89,22 @@ class Lazy {
             else if (this.y > windowHeight + this.height) {
                 this.y = windowHeight + this.height
             }
+
+            let delta = prev - this.y;
+
+            if (abs(delta) > 5) {
+                this.tilt =  (prev + 0.2*(prev - this.y));
+                this.tilt = -35 +((this.tilt * 60) / windowHeight);
+            }
+            // else {
+            //     if (this.tilt > 0) {
+            //         this.tilt-= 0.5;
+            //     }
+            //     if (this.tilt < 0) {
+            //         this.tilt+= 0.5;
+            //     }
+            // }
+
             this.draw();
             }
     }
@@ -211,11 +223,14 @@ class Lazy {
             this.transparency = 255;
         }
 
-        if (this.causOfDeath != DEATH.LAZYKAZE ) {
-            this.drawBumk();
-        }
         else {
-            this.drawBoom();
+            if (this.causOfDeath != DEATH.LAZYKAZE ) {
+                this.drawBumk();
+            }
+            else {
+                this.drawBoom();
+            }
+
         }
     }
 
@@ -239,7 +254,7 @@ class Lazy {
     drawBoom(){
         this.now = new Date().getTime()
         this.delta = this.now - this.last;
-        if (this.delta >= 60 && this.boomFrame < 14) {
+        if (this.delta >= 50 && this.boomFrame < 14) {
             
             this.last = this.now;
             this.boomFrame++;
@@ -260,7 +275,7 @@ class Lazy {
             this.shooting = true;
         }
         else{
-            this.lazer = new Lazer(this.x, this.y + this.width/2, this.width/2, this.height/16);
+            this.lazer = new Lazer(this.x, this.y + this.width/2, this.width * 0.8, this.height/16);
             forcePlaySound(soundList[SOUND_LIST.LAZER], 0.8);
             image(this.img[6], this.x, this.y, this.width, this.height);
             this.shooting = false;

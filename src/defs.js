@@ -13,11 +13,11 @@
  const JUMP_FORCE = 1100; // less is more
  const GRAVITY_FORCE = 1500;
  
- const NB_PIPES = 4;
+ const NB_PIPES = 6;
  const FIX_SIZE = false;
  
  // RATIO
- const SCREEN_RATIO = 16 / 8.3;
+ const SCREEN_RATIO = 16 / 9;
  
  const MAP_W_SUN_RATIO   = 1;
  const MAP_H_SUN_RATIO   = 3;
@@ -41,8 +41,9 @@
  const SIZE_PIPE_MED = 0.4;
  const SIZE_PIPE_HARD = 0.6;
 
- const AFTER_HIT = 300;
+ const AFTER_HIT = 500;
  const LIVES = 3;
+
 
  // SOUNDS
  const SOUND_LIST = {
@@ -168,6 +169,14 @@ let startImage = {
     height: 0,
 }
 
+let pipeSizeList = [
+    [0.0, 0.6],
+    [0.1, 0.4],
+    [0.3, 0.3],
+    [0.5, 0.05],
+    [0.6, 0.0], 
+];
+
 let lazySelected = -1;
 
  let pipesList = [];
@@ -215,6 +224,10 @@ let lazySelected = -1;
 
  let calibrationDone = false;
  let connected = false;
+
+ let audio = true;
+
+ let forceFullScreen = true;
 
  
 
